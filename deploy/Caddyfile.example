@@ -1,0 +1,11 @@
+# Run Caddy on the host with real DNS and reachable ports 80/443.
+# Use two separately registered sites where practical, not an app path.
+studio.example.edu.gh {
+    encode gzip
+    header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    reverse_proxy 127.0.0.1:8080
+}
+games.example-games.org {
+    header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    reverse_proxy 127.0.0.1:8001
+}

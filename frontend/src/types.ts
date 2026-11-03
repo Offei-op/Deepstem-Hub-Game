@@ -1,0 +1,12 @@
+export type Session = { role: 'team' | 'admin'; team_id: number | null; csrf: string }
+export type Team = {id:number;name:string;allowance:number;emergency:number;used:number;remaining:number;active:boolean;last_seen:number;current_version:number|null;active_request:string|null}
+export type Version = {id:number;number:number;title:string;prompt:string;explanation:string;source:string;created:number}
+export type EventInfo = {theme:string;announcement:string;paused:boolean;emergency_mode:boolean;frozen:boolean;phase:string;remaining_seconds:number;server_time:number;demo_mode:boolean}
+export type Submission = {team_id?:number;team_name?:string;version_id:number;title:string;description:string;created:number}
+export type StyleReference = {id:string;name:string;width:number;height:number;bytes:number;created:number;url:string}
+export type Workspace = {team:Team;event:EventInfo;versions:Version[];submission:Submission|null;references?:StyleReference[]}
+export type Generation = {id:string;team_id:number;status:string;version_id:number|null;error:string;fallback:boolean;created:number;duration_ms:number;cost_micro:number;reserved_micro:number;prompt:string}
+export type Starter = {id:string;title:string;genre:string;description:string}
+export type Config = {event_key?:string;name?:string;created_at?:number;archived_at?:number;theme:string;announcement:string;paused:boolean;emergency_mode:boolean;frozen:boolean;phase:string;remaining_seconds:number;ends_at:number|null;max_teams:number;initial_allowance:number;emergency_allowance:number;budget_micro:number;max_concurrent:number;max_input_tokens:number;max_output_tokens:number;primary:string;fallback:string}
+export type Attempt = {id:number;request_id:string;team_id:number;provider:string;model:string;status:string;input_tokens:number|null;output_tokens:number|null;cost_micro:number;uncertain:number;duration_ms:number;fallback:number;provider_request_id:string;error:string;created:number}
+export type Dashboard = {event:Config;server_time:number;remaining_seconds:number;teams:Team[];requests:Generation[];attempts:Attempt[];submissions:Submission[];metrics:{teams:number;active:number;requests:number;success:number;failed:number;running:number;spent_micro:number;reserved_micro:number;remaining_micro:number}}

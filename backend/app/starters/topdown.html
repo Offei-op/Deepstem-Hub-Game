@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Garden Guardian</title><style>
+*{box-sizing:border-box}body{margin:0;background:#090f1d;color:#eef3ff;font:15px system-ui,sans-serif;display:grid;place-items:center;min-height:100vh}main{width:min(100%,960px);padding:18px}header,footer{display:flex;justify-content:space-between;align-items:center;gap:16px}h1{font-size:20px;margin:0}p{color:#9eaccb;font-size:13px}canvas{display:block;width:100%;background:#101b31;border:1px solid #273552;border-radius:12px;max-height:75vh;object-fit:contain}button{border:1px solid #37666d;background:#153740;color:#98ffdf;padding:10px 20px;border-radius:8px;cursor:pointer}button:focus-visible{outline:3px solid #a99cff}#status{color:#8df0c9;font-weight:700}footer{font-size:12px;color:#9eaccb;padding-top:14px}
+</style></head><body><main><header><div><h1>Garden Guardian</h1><p>Collect 12 glowing blooms. Stay away from the wandering shadows.</p></div><button id="restart">↻ Restart</button></header>
+<canvas id="game" width="960" height="600" tabindex="0" aria-label="Garden Guardian keyboard game"></canvas><footer><span>Arrow keys / WASD move · R restart</span><span id="status">Ready</span></footer></main><script>
+'use strict';
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d'),statusEl=document.getElementById('status');
+const W=960,H=600,keys={};let state,score,elapsed,last=0,dt=1;
+const rand=(a,b)=>a+Math.random()*(b-a),clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x,y,w,h)}
+function circle(x,y,r,c){ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill()}
+function label(t,x,y,size=20,color='#eff6ff'){ctx.font=`700 ${size}px system-ui`;ctx.fillStyle=color;ctx.textAlign='center';ctx.fillText(t,x,y)}
+function backdrop(){rect(0,0,W,H,'#0c1528');ctx.strokeStyle='#18273d';ctx.lineWidth=1;for(let x=0;x<W;x+=48){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}for(let y=0;y<H;y+=48){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}for(let i=0;i<36;i++)circle((i*139+17)%W,(i*83+23)%H,1.3,'#3d5270')}
+function finish(win){state=win?'won':'lost'}
+function overlay(){if(state==='playing')return;rect(0,0,W,H,'#07101cdd');label(state==='won'?'YOU DID IT!':'ONE MORE TRY?',W/2,H/2-20,40,state==='won'?'#91f6cb':'#c5b5ff');label('Press R or Restart to play again',W/2,H/2+32,19)}
+
+let player,bloom,enemies,health,invincible;
+function newBloom(){bloom={x:rand(50,910),y:rand(100,550)}}
+function init(){player={x:480,y:300};newBloom();enemies=[{x:40,y:40},{x:900,y:550},{x:40,y:550}];health=3;invincible=0}
+function update(){let dx=(keys.arrowright||keys.d?1:0)-(keys.arrowleft||keys.a?1:0),dy=(keys.arrowdown||keys.s?1:0)-(keys.arrowup||keys.w?1:0),len=Math.hypot(dx,dy)||1;player.x=clamp(player.x+dx/len*4.6*dt,18,942);player.y=clamp(player.y+dy/len*4.6*dt,80,582);if(Math.hypot(player.x-bloom.x,player.y-bloom.y)<30){score++;newBloom()}invincible-=dt;enemies.forEach((e,i)=>{const a=Math.atan2(player.y-e.y,player.x-e.x);e.x+=Math.cos(a)*(1.15+score/25)*dt;e.y+=Math.sin(a)*(1.15+score/25)*dt;if(invincible<=0&&Math.hypot(player.x-e.x,player.y-e.y)<28){health--;invincible=100}});if(health<=0)finish(false);if(score>=12)finish(true)}
+function draw(){label('BLOOMS '+score+' / 12',150,44,22,'#8af4cc');label('HEALTH '+'◆'.repeat(Math.max(0,health)),800,44,18,'#bbabff');for(let i=0;i<6;i++)circle(bloom.x+Math.cos(i*Math.PI/3)*11,bloom.y+Math.sin(i*Math.PI/3)*11,9,'#e7bd85');circle(bloom.x,bloom.y,8,'#fff1ca');enemies.forEach(e=>{circle(e.x,e.y,20,'#754668');circle(e.x-6,e.y-3,3,'#e6a5c4');circle(e.x+6,e.y-3,3,'#e6a5c4')});if(invincible<=0||Math.floor(elapsed*12)%2===0){circle(player.x,player.y,17,'#90eac6');circle(player.x+5,player.y-4,4,'#173d37')}}
+
+function restart(){state='playing';score=0;elapsed=0;for(const key in keys)delete keys[key];init();canvas.focus()}
+document.getElementById('restart').addEventListener('click',restart);
+window.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','Enter'].includes(e.key))e.preventDefault();keys[e.key.toLowerCase()]=true;if(e.key.toLowerCase()==='r')restart();if(typeof onKey==='function'&&!e.repeat&&state==='playing')onKey(e.key)});
+window.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});window.addEventListener('blur',()=>{for(const key in keys)delete keys[key]});
+function loop(now){dt=Math.min((now-last)/16.667,2)||1;last=now;if(state==='playing'){elapsed+=dt/60;update()}backdrop();draw();overlay();statusEl.textContent=`${state==='playing'?'PLAYING':state==='won'?'COMPLETE':'GAME OVER'} · Score ${Math.floor(score)}`;requestAnimationFrame(loop)}
+restart();requestAnimationFrame(loop);
+</script></body></html>

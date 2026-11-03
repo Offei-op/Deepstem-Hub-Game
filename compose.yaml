@@ -1,0 +1,71 @@
+services:
+  backend:
+    build: ./backend
+    env_file: .env
+    environment:
+      DATABASE_URL: sqlite:////data/studio.db
+      PROVIDER_CONFIG_PATH: /config/providers.json
+    volumes:
+      - studio-data:/data
+      - studio-config:/config
+    expose:
+      - "8000"
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    stop_grace_period: 10m
+    mem_limit: 768m
+    cpus: 2
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+  preview:
+    build: ./backend
+    command: ["uvicorn", "app.preview:create_preview", "--factory", "--host", "0.0.0.0", "--port", "8001", "--no-access-log"]
+    # Deliberately no env_file: never pass provider keys or admin credentials to this service.
+    environment:
+      DATABASE_URL: sqlite:////data/studio.db
+      APP_ORIGIN: ${APP_ORIGIN:-http://localhost:8080}
+      PREVIEW_ORIGIN: ${PREVIEW_ORIGIN:-http://127.0.0.1:8001}
+      PREVIEW_SECRET: ${PREVIEW_SECRET:?Set PREVIEW_SECRET in .env}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+    volumes:
+      - studio-data:/data:ro
+    ports:
+      - "127.0.0.1:8001:8001"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    mem_limit: 192m
+    cpus: 1
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,os,urllib.parse; r=urllib.request.Request('http://localhost:8001/health',headers={'Host':urllib.parse.urlparse(os.environ['PREVIEW_ORIGIN']).netloc}); urllib.request.urlopen(r)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+  frontend:
+    build: ./frontend
+    environment:
+      PREVIEW_ORIGIN: ${PREVIEW_ORIGIN:-http://127.0.0.1:8001}
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    mem_limit: 128m
+    cpus: 1
+volumes:
+  studio-data:
+  studio-config:

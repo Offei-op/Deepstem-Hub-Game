@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Light Circuit</title><style>
+*{box-sizing:border-box}body{margin:0;background:#090f1d;color:#eef3ff;font:15px system-ui,sans-serif;display:grid;place-items:center;min-height:100vh}main{width:min(100%,960px);padding:18px}header,footer{display:flex;justify-content:space-between;align-items:center;gap:16px}h1{font-size:20px;margin:0}p{color:#9eaccb;font-size:13px}canvas{display:block;width:100%;background:#101b31;border:1px solid #273552;border-radius:12px;max-height:75vh;object-fit:contain}button{border:1px solid #37666d;background:#153740;color:#98ffdf;padding:10px 20px;border-radius:8px;cursor:pointer}button:focus-visible{outline:3px solid #a99cff}#status{color:#8df0c9;font-weight:700}footer{font-size:12px;color:#9eaccb;padding-top:14px}
+</style></head><body><main><header><div><h1>Light Circuit</h1><p>Switch all 16 lights ON. A switch flips itself and its neighbors.</p></div><button id="restart">↻ Restart</button></header>
+<canvas id="game" width="960" height="600" tabindex="0" aria-label="Light Circuit keyboard game"></canvas><footer><span>Arrow keys select · Space / Enter switch · Click tiles · R restart</span><span id="status">Ready</span></footer></main><script>
+'use strict';
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d'),statusEl=document.getElementById('status');
+const W=960,H=600,keys={};let state,score,elapsed,last=0,dt=1;
+const rand=(a,b)=>a+Math.random()*(b-a),clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x,y,w,h)}
+function circle(x,y,r,c){ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill()}
+function label(t,x,y,size=20,color='#eff6ff'){ctx.font=`700 ${size}px system-ui`;ctx.fillStyle=color;ctx.textAlign='center';ctx.fillText(t,x,y)}
+function backdrop(){rect(0,0,W,H,'#0c1528');ctx.strokeStyle='#18273d';ctx.lineWidth=1;for(let x=0;x<W;x+=48){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}for(let y=0;y<H;y+=48){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}for(let i=0;i<36;i++)circle((i*139+17)%W,(i*83+23)%H,1.3,'#3d5270')}
+function finish(win){state=win?'won':'lost'}
+function overlay(){if(state==='playing')return;rect(0,0,W,H,'#07101cdd');label(state==='won'?'YOU DID IT!':'ONE MORE TRY?',W/2,H/2-20,40,state==='won'?'#91f6cb':'#c5b5ff');label('Press R or Restart to play again',W/2,H/2+32,19)}
+
+let board,cursor,moves;
+function flip(i){const x=i%4,y=Math.floor(i/4);for(const [dx,dy]of [[0,0],[-1,0],[1,0],[0,-1],[0,1]]){const a=x+dx,b=y+dy;if(a>=0&&a<4&&b>=0&&b<4)board[b*4+a]=!board[b*4+a]}}
+function init(){board=Array(16).fill(true);cursor=0;moves=0;[0,3,5,10,12].forEach(flip)}
+function onKey(k){if(k==='ArrowRight')cursor=(cursor+1)%16;if(k==='ArrowLeft')cursor=(cursor+15)%16;if(k==='ArrowDown')cursor=(cursor+4)%16;if(k==='ArrowUp')cursor=(cursor+12)%16;if(k===' '||k==='Enter'){flip(cursor);moves++}}
+canvas.addEventListener('click',e=>{if(state!=='playing')return;const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*W/r.width,y=(e.clientY-r.top)*H/r.height;const a=Math.floor((x-280)/100),b=Math.floor((y-110)/100);if(a>=0&&a<4&&b>=0&&b<4){cursor=b*4+a;flip(cursor);moves++}});
+function update(){score=board.filter(Boolean).length;if(score===16)finish(true)}
+function draw(){label('LIGHTS '+score+' / 16    ·    MOVES '+moves,W/2,65,24,'#8df3cb');for(let i=0;i<16;i++){const x=280+(i%4)*100,y=110+Math.floor(i/4)*100;rect(x,y,90,90,board[i]?'#74ddbb':'#1e2c44');circle(x+45,y+45,15,board[i]?'#c4ffe9':'#38475f');if(i===cursor){ctx.strokeStyle='#c1b0ff';ctx.lineWidth=4;ctx.strokeRect(x-4,y-4,98,98)}}}
+
+function restart(){state='playing';score=0;elapsed=0;for(const key in keys)delete keys[key];init();canvas.focus()}
+document.getElementById('restart').addEventListener('click',restart);
+window.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','Enter'].includes(e.key))e.preventDefault();keys[e.key.toLowerCase()]=true;if(e.key.toLowerCase()==='r')restart();if(typeof onKey==='function'&&!e.repeat&&state==='playing')onKey(e.key)});
+window.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});window.addEventListener('blur',()=>{for(const key in keys)delete keys[key]});
+function loop(now){dt=Math.min((now-last)/16.667,2)||1;last=now;if(state==='playing'){elapsed+=dt/60;update()}backdrop();draw();overlay();statusEl.textContent=`${state==='playing'?'PLAYING':state==='won'?'COMPLETE':'GAME OVER'} · Score ${Math.floor(score)}`;requestAnimationFrame(loop)}
+restart();requestAnimationFrame(loop);
+</script></body></html>
