@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import math
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -42,6 +43,11 @@ def classify(exc):
     response = getattr(exc, 'response', None)
     headers = getattr(response, 'headers', {}) or {}
     rid = str(getattr(exc, 'request_id', '') or headers.get('x-request-id', '') or headers.get('x-goog-request-id', ''))
+    # Record only safe diagnostic identifiers, never exception bodies, prompts or headers.
+    logging.getLogger(__name__).warning('AI request failed: exception=%s status=%s request_id=%s',
+        type(exc).__name__, code if isinstance(code, (str, int)) else None, rid)
+    if isinstance(exc, TimeoutError) or type(exc).__name__ in {'APITimeoutError', 'ReadTimeout', 'ConnectTimeout', 'WriteTimeout', 'PoolTimeout'}:
+        return ProviderError('uncertain', 'The AI took too long to finish. Your saved game is safe. Ask your organizer to review the request before trying again.', rid)
     if code in {401, 402, 403}:
         return ProviderError('configuration', 'Provider authentication or permissions failed.', rid)
     if code == 429 and any(x in body.lower() for x in ['quota', 'billing', 'credit', 'resource_exhausted']):

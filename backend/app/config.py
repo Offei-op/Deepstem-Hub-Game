@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     openai_output_price: float | None = None
     gemini_input_price: float | None = None
     gemini_output_price: float | None = None
-    provider_timeout_seconds: int = Field(default=90, ge=1, le=180)
+    provider_timeout_seconds: int = Field(default=600, ge=1, le=600)
     safe_retries: int = 1
     max_html_bytes: int = Field(default=180_000, ge=1000, le=250_000)
     max_prompt_chars: int = Field(default=3000, ge=100, le=3000)

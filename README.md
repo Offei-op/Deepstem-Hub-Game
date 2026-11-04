@@ -86,7 +86,7 @@ Check model access and current pricing in your own provider projects. No model i
 | `GEMINI_INPUT_PRICE`, `GEMINI_OUTPUT_PRICE` | Same units; account for billed thinking tokens |
 | `PRIMARY_AI_PROVIDER` | `openai`, `gemini`, or development-only `mock` |
 | `FALLBACK_AI_PROVIDER` | `gemini`, `openai`, or blank to disable |
-| `PROVIDER_TIMEOUT_SECONDS` | Per-call deadline, default 90 seconds |
+| `PROVIDER_TIMEOUT_SECONDS` | Per-call deadline, default 600 seconds (10 minutes) |
 | `SAFE_RETRIES` | 0–2 retries of explicit rate-limit rejection; default 1 |
 
 Blank pricing values mean **unconfigured**, not free. Both enabled providers must have credentials, a model and nonnegative finite prices before generation. Restart the API after editing secrets, models, prices or timeout limits. Then select the primary and fallback in **Event settings**, save, and test a deliberately small real game. Production refuses mock mode.
